@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexMarket | Buy & Sell Everything</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #3b82f6;
+            --secondary: #002f34; /* OLX Signature Greenish Black */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Category Section Styles */
+        .olx-categories-container {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 20px;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .category-item:hover {
+            background-color: #f0f9ff;
+            transform: translateY(-3px);
+        }
+
+        .category-icon-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 26px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .category-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--secondary);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 640px) {
+            .categories-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                padding: 0 10px;
+            }
+            .category-icon-circle {
+                width: 52px;
+                height: 52px;
+                font-size: 20px;
+            }
+            .category-label {
+                font-size: 11px;
+            }
+        }
+
+        /* Existing Styles */
+        .product-card:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .featured-badge { background: linear-gradient(45deg, #f59e0b, #fbbf24); }
+    </style>
+</head>
+<body class="pb-20 md:pb-0">
+
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
+                <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-shopping-bag text-white"></i></div>
+                <span class="text-xl font-bold text-slate-800 hidden md:block">NexMarket</span>
+            </div>
+            <div class="flex-1 max-w-xl relative min-w-[200px]">
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search cars, mobiles, and more..." 
+
+class="w-full bg-gray-100 border-none rounded-full py-2 px-10 focus:ring-2 focus:ring-blue-500 outline-none">
+                <i class="fas fa-search absolute left-4 top-3 text-gray-400"></i>
+            </div>
+            <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4 flex-1 sm:flex-none relative">
+                <button onclick="navigateTo('home')" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 py-
+
+1">Home</button>
+                <button onclick="toggleModal('sellModal')" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 py-
+
+1">Sell</button>
+                
+                <div class="relative inline-block text-left">
+                    <button onclick="toggleMoreDropdown(event)" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 
+
+py-1 flex items-center gap-1 outline-none">
+                        More <i class="fas fa-chevron-down text-xs transition-transform duration-200" id="moreDropdownIcon"></i>
+                    </button>
+                    <div id="moreMenuDropdown" class="absolute right-0 mt-2 w-48 rounded-xl bg-white border border-gray-100 shadow-xl 
+
+hidden z-50 overflow-hidden py-1">
+                        <button onclick="navigateTo('about'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm 
+
+text-gray-700 hover:bg-slate-50 font-medium flex items-center gap-2"><i class="fas fa-info-circle text-gray-400 w-
+
+4"></i>About</button> <button onclick="filterCategory('vehicles'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 
+
+text-sm text-gray-700 hover:bg-slate-50 font-medium flex items-center gap-2"><i class="fas fa-car text-gray-400 w-
+
+4"></i>Brand</button> <button onclick="window.scrollTo({top: document.getElementById('categoriesSection').offsetTop - 80, behavior: 
+
+'smooth'}); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 font-medium flex 
+
+items-center gap-2"><i class="fas fa-th-large text-gray-400 w-4"></i>Categories</button> <button onclick="toggleModal
+
+('feedbackModal'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-teal-600 hover:bg-teal-50/50 font-
+
+medium flex items-center gap-2"><i class="fas fa-bullhorn w-4"></i>Feedback</button> <button onclick="openUserSupportInbox(); 
+
+toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50/50 font-medium flex items-
+
+center gap-2 relative"> <i class="fas fa-comments w-4"></i>Support Inbox <span id="userInboxBadge" class="absolute right-3 top-3 bg-
+
+indigo-600 text-white text-[9px] w-3 h-3 rounded-full flex items-center justify-center hidden">!</span> </button> <button 
+
+id="adminPanelNavBtn" onclick="navigateTo('admin'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-red-
+
+600 hover:bg-red-50/50 font-bold hidden border-t border-gray-100"><i class="fas fa-user-shield w-4"></i>Admin</button>
+                    </div>
+                </div>
+
+                <button onclick="toggleModal('profileModal')" class="bg-gray-100 text-slate-700 px-4 py-2 rounded-full font-semibold 
+
+hover:bg-gray-200 transition text-sm flex items-center gap-2">
+                    <i class="fas fa-user"></i> <span id="navProfileName">Profile</span>
+                </button>
+                <button onclick="toggleModal('sellModal')" class="bg-blue-600 text-white px-5 py-2 rounded-full font-bold shadow-lg 
+
+shadow-blue-200 hover:bg-blue-700 transition text-sm">
+                    <i class="fas fa-plus mr-1"></i> SELL
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="importantAnnouncementsContainer" class="max-w-7xl mx-auto px-4 mt-6 hidden">
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+            <h3 class="text-sm font-extrabold text-amber-900 mb-3 flex items-center gap-2">
+                <i class="fas fa-bullhorn text-amber-600 animate-bounce"></i> Important Updates & Notices
+            </h3>
+            <div id="importantPostsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+        </div>
+    </div>
+
+    <section id="categoriesSection" class="olx-categories-container">
+        <div class="categories-grid">
+            <a href="?cat=mobiles" onclick="event.preventDefault(); filterCategory('mobiles');" class="category-item"> <div 
+
+class="category-icon-circle" style="color: #3b82f6;"><i class="fas fa-mobile-alt"></i></div> <span class="category-
+
+label">Mobiles</span> </a> <a href="?cat=vehicles" onclick="event.preventDefault(); filterCategory('vehicles');" class="category-
+
+item"> <div class="category-icon-circle" style="color: #ef4444;"><i class="fas fa-car"></i></div> <span class="category-
+
+label">Vehicles</span> </a> <a href="?cat=property-sale" onclick="event.preventDefault(); filterCategory('property-sale');" 
+
+class="category-item"> <div class="category-icon-circle" style="color: #10b981;"><i class="fas fa-building"></i></div> <span 
+
+class="category-label">Property for Sale</span> </a> <a href="?cat=property-rent" onclick="event.preventDefault(); filterCategory
+
+('property-rent');" class="category-item"> <div class="category-icon-circle" style="color: #f59e0b;"><i class="fas fa-
+
+home"></i></div> <span class="category-label">Property for Rent</span> </a> <a href="?cat=electronics" onclick="event.preventDefault
+
+(); filterCategory('electronics');" class="category-item"> <div class="category-icon-circle" style="color: #6366f1;"><i class="fas 
+
+fa-plug"></i></div> <span class="category-label">Electronics & Appliances</span> </a> <a href="?cat=bikes" 
+
+onclick="event.preventDefault(); filterCategory('bikes');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#ec4899;"><i class="fas fa-motorcycle"></i></div> <span class="category-label">Bikes</span> </a> <a href="?cat=business" 
+
+onclick="event.preventDefault(); filterCategory('business');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#0d9488;"><i class="fas fa-briefcase"></i></div> <span class="category-label">Business & Industrial</span> </a> <a href="?
+
+cat=services" onclick="event.preventDefault(); filterCategory('services');" class="category-item"> <div class="category-icon-circle" 
+
+style="color: #8b5cf6;"><i class="fas fa-tools"></i></div> <span class="category-label">Services</span> </a> <a href="?cat=jobs" 
+
+onclick="event.preventDefault(); filterCategory('jobs');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#f43f5e;"><i class="fas fa-user-md"></i></div> <span class="category-label">Jobs</span> </a> <a href="?cat=animals" 
+
+onclick="event.preventDefault(); filterCategory('animals');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#854d0e;"><i class="fas fa-paw"></i></div> <span class="category-label">Animals</span> </a> <a href="?cat=furniture" 
+
+onclick="event.preventDefault(); filterCategory('furniture');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#78350f;"><i class="fas fa-couch"></i></div> <span class="category-label">Furniture & Decor</span> </a> <a href="?cat=fashion" 
+
+onclick="event.preventDefault(); filterCategory('fashion');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#db2777;"><i class="fas fa-tshirt"></i></div> <span class="category-label">Fashion & Beauty</span> </a> <a href="?cat=hobbies" 
+
+onclick="event.preventDefault(); filterCategory('hobbies');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#2563eb;"><i class="fas fa-guitar"></i></div> <span class="category-label">Books & Hobbies</span> </a> <a href="?cat=kids" 
+
+onclick="event.preventDefault(); filterCategory('kids');" class="category-item"> <div class="category-icon-circle" style="color: 
+
+#fbbf24;"><i class="fas fa-baby-carriage"></i></div> <span class="category-label">Kids</span> </a>
+        </div>
+    </section>
+
+    <main id="homePage" class="max-w-7xl mx-auto px-4 py-8 page-view">
+        <div id="featuredSection" class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="featuredTitle" class="text-2xl font-bold text-slate-800">Featured Ads</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="featuredGrid"></div>
+        </div>
+
+        <div>
+            <h2 id="freshTitle" class="text-2xl font-bold text-slate-800 mb-6">Fresh Recommendations</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="freshGrid"></div>
+        </div>
+    </main>
+
+    <main id="aboutPage" class="max-w-4xl mx-auto px-4 py-12 page-view hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">About NexMarketplace</h1>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                Welcome to NexMarketplace, your number one source for all things buying and selling. We're dedicated to providing you 
+
+the very best platform for classified ads, with an emphasis on reliability, ease of use, and local community connection.
+            </p>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                Founded with a vision to streamline digital peer-to-peer commerce, NexMarketplace has come a long way from its 
+
+beginnings. Our platform allows users from all over the country to list products, find jobs, search for properties, and discover 
+
+fresh recommendations effortlessly.
+            </p>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                We hope you enjoy our platform as much as we enjoy offering it to you. If you have any questions or comments, please 
+
+don't hesitate to contact us.
+            </p>
+            <div class="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-500">
+                &copy; 2026 NexMarketplace Inc. All rights reserved.
+            </div>
+        </div>
+    </main>
+
+    <main id="adminPage" class="max-w-7xl mx-auto px-4 py-8 page-view hidden">
+        <div class="bg-slate-900 text-white p-6 rounded-2xl mb-8 flex justify-between items-center shadow-lg">
+            <div>
+                <h1 class="text-2xl font-bold"><i class="fas fa-user-shield mr-2 text-red-500"></i>Admin Central Dashboard</h1>
+                <p class="text-slate-400 text-sm mt-1">Logged In Securely as System Administrator</p>
+            </div>
+            <span class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-3 py-1 rounded-full font-bold uppercase 
+
+tracking-wider">Master Access</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="space-y-6">
+                <div class="bg-amber-50 p-6 rounded-2xl border border-amber-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-amber-900 mb-3 border-b border-amber-200 pb-2">
+                        <i class="fas fa-plus-circle mr-2 text-amber-700"></i>Create Important Post
+                    </h3>
+                    <form id="adminImportantPostForm" onsubmit="handleImportantPostSubmit(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Notice Banner Image</label>
+                            <input type="file" id="importantPostImage" accept="image/*" required class="w-full text-xs bg-white 
+
+border p-1 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Headline Title</label>
+                            <input type="text" id="importantPostTitle" required placeholder="e.g. Eid Mubarak Special" class="w-full 
+
+border rounded p-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Short Notice Description</label>
+                            <textarea id="importantPostDesc" required rows="2" placeholder="Write announcement brief text here..." 
+
+class="w-full border rounded p-2 text-sm outline-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 
+
+rounded-lg transition shadow">
+                            Broadcast Announcement
+                        </button>
+                    </form>
+                    <div id="adminImportantPostsManagementList" class="mt-4 space-y-2 max-h-[20vh] overflow-y-auto custom-
+
+scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-users mr-2 text-blue-
+
+500"></i>Logged-in Users</h3>
+                    <div id="adminUsersList" class="space-y-4 max-h-[25vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 text-teal-600 flex justify-between items-center">
+                        <span><i class="fas fa-bullhorn mr-2"></i>User Feedback Box</span>
+                        <span id="feedbackCountBadge" class="bg-teal-100 text-teal-800 text-xs px-2 py-0.5 rounded-full font-
+
+bold">0</span>
+                    </h3>
+                    <div id="adminFeedbackList" class="space-y-3 max-h-[35vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 text-indigo-600"><i class="fas fa-comments mr-
+
+2"></i>Support Chat Channels</h3>
+                    <div id="adminChatThreadsContainer" class="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-8">
+                <div id="adminChatWindowBox" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hidden flex flex-col 
+
+h-[450px]">
+                    <div class="border-b pb-3 flex justify-between items-center bg-indigo-50/50 p-3 rounded-xl">
+                        <div>
+                            <span class="text-[11px] font-bold text-indigo-500 block uppercase">Active Secure Chat Thread</span>
+                            <h4 id="adminActiveChatUserTitle" class="text-sm font-bold text-slate-800">Select User</h4>
+                        </div>
+                        <button onclick="closeAdminChatWindow()" class="text-gray-400 hover:text-black"><i class="fas fa-
+
+times"></i></button>
+                    </div>
+                    <div id="adminChatMessagesArea" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50 
+
+rounded-xl my-3"></div>
+                    <form id="adminChatSubmitForm" onsubmit="handleAdminChatSend(event)" class="flex gap-2">
+                        <input type="text" id="adminChatTextInput" required placeholder="Type text response message..." class="flex-1 
+
+text-sm border rounded-xl px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 text-sm 
+
+rounded-xl transition shadow">Reply</button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                        <span><i class="fas fa-clock mr-2 text-amber-500"></i>Pending Post Approvals Queue</span>
+                        <span id="pendingCountBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-
+
+bold">0</span>
+                    </h3>
+                    <div id="adminPendingGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-1 custom-
+
+scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-th-list mr-2 text-emerald-
+
+500"></i>Manage Active Public Listings</h3>
+                    <div id="adminActiveGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-1 custom-
+
+scrollbar"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="feedbackModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center bg-teal-50">
+                <h3 class="text-xl font-bold text-teal-950"><i class="fas fa-bullhorn mr-2 text-teal-600"></i>Submit Ad Feedback</h3>
+                <button onclick="toggleModal('feedbackModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-
+
+xl"></i></button>
+            </div>
+            <form id="userFeedbackForm" class="p-6 space-y-4" onsubmit="handleFeedbackSubmit(event)">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Your Feedback / Message</label>
+                    <textarea id="feedbackMsgTextarea" required rows="4" placeholder="Enter text details regarding system 
+
+experience..." class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg transition 
+
+shadow"> Submit Persistent Feedback </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="userSupportInboxModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center 
+
+p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]">
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-50">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comments text-indigo-600 text-lg"></i>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Helpdesk Support Inbox</h3>
+                        <p class="text-[10px] text-gray-500">Text Only Protocol Messaging System</p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('userSupportInboxModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times 
+
+text-lg"></i></button>
+            </div>
+            <div id="userChatMessagesArea" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50"></div>
+            <form id="userChatSubmitForm" onsubmit="handleUserChatSend(event)" class="p-3 border-t bg-white flex gap-2">
+                <input type="text" id="userChatTextInput" required placeholder="Type text query message..." class="flex-1 text-sm 
+
+border rounded-xl px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 text-sm rounded-xl 
+
+transition shadow">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="sellModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Post Your Ad</h3>
+                <button onclick="toggleModal('sellModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-
+
+xl"></i></button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <form id="addAdForm" class="space-y-4" onsubmit="handleFormSubmit(event)">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <label class="cursor-pointer border-2 border-blue-500 bg-white p-3 rounded-lg block relative">
+                            <input type="radio" name="postPlanType" value="free" checked onchange="toggleFormPlanFields('free')" 
+
+class="absolute top-3 right-3 text-blue-600">
+                            <span class="block font-bold text-slate-800 text-sm">Free Post</span>
+                            <span class="block text-xs text-gray-400 mt-1">Normal layout sequence listing. Subject to 
+
+approval.</span>
+                        </label>
+                        <label class="cursor-pointer border border-gray-200 hover:border-blue-300 bg-white p-3 rounded-lg block 
+
+relative">
+                            <input type="radio" name="postPlanType" value="paid" onchange="toggleFormPlanFields('paid')" 
+
+class="absolute top-3 right-3 text-blue-600">
+                            <span class="block font-bold text-amber-600 text-sm flex items-center gap-1"> <i class="fas fa-star 
+
+text-xs"></i> Paid Featured Post </span>
+                            <span class="block text-xs text-gray-400 mt-1">Stays at top layout layers. Premium placement.</span>
+                        </label>
+                    </div>
+
+                    <div id="jazzcashPaymentFields" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-3 
+
+animate-fade-in">
+                        <div class="text-xs text-amber-900 font-medium space-y-1">
+                            <p class="font-bold text-sm text-amber-950 mb-1"><i class="fas fa-wallet text-amber-600 mr-
+
+1"></i>JazzCash Transfer Account Details:</p>
+                            <p><strong>Account Number:</strong> 03069348405</p>
+                            <p><strong>Holder Name:</strong> Imtiaz Ali</p>
+                            <p class="text-[11px] text-amber-700 mt-1">Please transfer the fee amount to the above number, then copy 
+
+and paste your secure 11-Digit Transaction ID tracking code parameters below.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">JazzCash Transaction ID (TID) *</label>
+                            <input type="text" id="formTransactionId" placeholder="Enter transaction reference ID" class="w-full 
+
+border rounded-lg p-2 text-sm bg-white outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Select Category *</label>
+                        <select id="formCategory" required onchange="handleCategoryFormSwitch(this.value)" class="w-full border 
+
+rounded-lg p-2 bg-white outline-none focus:border-blue-500 font-medium">
+                            <option value="" disabled selected>Choose a category first</option>
+                            <option value="mobiles">Mobiles</option>
+                            <option value="vehicles">Vehicles / Cars</option>
+                            <option value="bikes">Bikes</option>
+                            <option value="property-sale">Property for Sale</option>
+                            <option value="property-rent">Property for Rent</option>
+                            <option value="jobs">Jobs</option>
+                            <option value="animals">Animals</option>
+                            <option value="electronics">Electronics & Home Appliances</option>
+                            <option value="business">Business & Industrial</option>
+                            <option value="services">Services</option>
+                            <option value="furniture">Furniture & Home Decor</option>
+                            <option value="fashion">Fashion & Beauty</option>
+                            <option value="hobbies">Books, Sports & Hobbies</option>
+                            <option value="kids">Kids</option>
+                        </select>
+                    </div>
+
+                    <div id="dynamicFieldsContainer" class="space-y-4">
+                        <p class="text-sm text-gray-400 py-4 text-center">Please select a category above to load the accurate form 
+
+parameters.</p>
+                    </div>
+
+                    <div id="sharedFormBottom" class="space-y-4 hidden border-t border-gray-100 pt-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Seller Name *</label>
+                                <input type="text" id="formSellerName" required placeholder="Your Name" class="w-full border 
+
+rounded-lg p-2 outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Contact Number *</label>
+                                <input type="tel" id="formContact" required placeholder="e.g. 03001234567" class="w-full border 
+
+rounded-lg p-2 outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">City / Location *</label>
+                            <input type="text" id="citySearchInput" required onfocus="showCityDropdown()" oninput="filterCities
+
+(this.value)" placeholder="Search and select city..." autocomplete="off" class="w-full border rounded-lg p-2 outline-none 
+
+focus:border-blue-500">
+                            <div id="cityDropdownList" class="absolute left-0 right-0 mt-1 max-h-48 bg-white border border-gray-200 
+
+rounded-lg shadow-lg overflow-y-auto hidden z-50 custom-scrollbar"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Product Images (Max 3) *</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 
+
+rounded-lg p-4 flex flex-col items-center justify-center w-24 h-24 text-center transition">
+                                    <i class="fas fa-camera text-gray-400 text-lg"></i>
+                                    <span class="text-[10px] text-gray-500 mt-1">Upload</span>
+                                    <input type="file" id="formImages" accept="image/*" multiple max="3" onchange="handleImageUpload
+
+(event)" class="hidden">
+                                </label>
+                                <div id="imagePreviewContainer" class="flex gap-2"></div>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">First uploaded image will be used as the main cover photo.</p>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl 
+
+transition shadow-lg shadow-blue-200 mt-4">
+                            Post Ad For Approval
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-id-card mr-2 text-blue-500"></i>User Profile</h3>
+                <button onclick="toggleModal('profileModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-
+
+xl"></i></button>
+            </div>
+            <form id="profileForm" class="p-6 space-y-4" onsubmit="handleProfileSubmit(event)">
+                <div class="flex flex-col items-center mb-4">
+                    <div class="relative w-24 h-24 bg-slate-100 rounded-full border border-gray-200 overflow-hidden flex items-center 
+
+justify-center group mb-2">
+                        <img id="profileImageDisplay" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?
+
+auto=format&fit=crop&w=150" class="w-full h-full object-cover">
+                        <label class="absolute inset-0 bg-black/40 text-white text-[10px] font-bold flex flex-col items-center 
+
+justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition">
+                            <i class="fas fa-edit text-sm mb-0.5"></i>Change
+                            <input type="file" id="profileImageInput" accept="image/*" onchange="handleProfileImageUpload(event)" 
+
+class="hidden">
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-400">Click avatar to alter user image</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="profileNameInput" required placeholder="Enter profile user name" class="w-full border 
+
+rounded-lg p-2 outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Mobile/Login ID Number</label>
+                    <input type="text" id="profilePhoneInput" required placeholder="Enter login phone identifier number" class="w-
+
+full border rounded-lg p-2 outline-none focus:border-blue-500">
+                </div>
+                <div id="adminNoticeTag" class="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg font-medium 
+
+hidden">
+                    <i class="fas fa-info-circle mr-1"></i> Special code configuration matching Admin privileges detected.
+                </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg transition 
+
+shadow-md">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Server URL configuration
+        const SERVER_URL = 'http://localhost:5000';
+
+        // Check and handle Admin privilege visibility dynamically based on your existing profile criteria
+        function updateAdminVisibility(phoneNumber, name) {
+            const adminPanelNavBtn = document.getElementById('adminPanelNavBtn');
+            const adminNoticeTag = document.getElementById('adminNoticeTag');
+            
+            // App ki existing original admin verification conditions ko exact match kiya gaya hai
+            if (phoneNumber === "03069348405" || name?.toLowerCase() === "imtiaz ali") {
+                if (adminPanelNavBtn) adminPanelNavBtn.classList.remove('hidden');
+                if (adminNoticeTag) adminNoticeTag.classList.remove('hidden');
+                return true;
+            } else {
+                if (adminPanelNavBtn) adminPanelNavBtn.classList.add('hidden');
+                if (adminNoticeTag) adminNoticeTag.classList.add('hidden');
+                return false;
+            }
+        }
+
+        // Setup Initial State function updated to work directly with LocalStorage data matching original logic
+        function setupInitialProfileState() {
+            const storedName = localStorage.getItem('profileName') || 'Imtiaz Ali';
+            const storedPhone = localStorage.getItem('profilePhone') || '03069348405';
+            const storedImg = localStorage.getItem('profileImage') || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?
+
+auto=format&fit=crop&w=150';
+
+            const navProfileName = document.getElementById('navProfileName');
+            const profileNameInput = document.getElementById('profileNameInput');
+            const profilePhoneInput = document.getElementById('profilePhoneInput');
+            const profileImageDisplay = document.getElementById('profileImageDisplay');
+
+            if (navProfileName) navProfileName.innerText = storedName;
+            if (profileNameInput) profileNameInput.value = storedName;
+            if (profilePhoneInput) profilePhoneInput.value = storedPhone;
+            if (profileImageDisplay) profileImageDisplay.src = storedImg;
+
+            // Admin configuration parameters trigger
+            updateAdminVisibility(storedPhone, storedName);
+        }
+
+        // Standard baseline profile changes submit controller
+        async function handleProfileSubmit(e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('profileNameInput').value.trim();
+            const phoneVal = document.getElementById('profilePhoneInput').value.trim();
+            const imgDisplay = document.getElementById('profileImageDisplay').src;
+
+            localStorage.setItem('profileName', nameVal);
+            localStorage.setItem('profilePhone', phoneVal);
+            localStorage.setItem('profileImage', imgDisplay);
+
+            const navProfileName = document.getElementById('navProfileName');
+            if (navProfileName) navProfileName.innerText = nameVal;
+
+            const isAdmin = updateAdminVisibility(phoneVal, nameVal);
+            alert("Profile preferences locally updated successfully!");
+            toggleModal('profileModal');
+
+            if(isAdmin && typeof navigateTo === 'function') {
+                navigateTo('admin');
+            }
+        }
+
+        // Handle profile image reader parameters conversion
+        function handleProfileImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const profileImageDisplay = document.getElementById('profileImageDisplay');
+                if (profileImageDisplay) profileImageDisplay.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Firebase Completely Removed & Replaced with Node.js Server System
+        handleImportantPostSubmit = async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('importantPostImage');
+            const titleVal = document.getElementById('importantPostTitle').value.trim();
+            const descVal = document.getElementById('importantPostDesc').value.trim();
+
+            if(!fileInput.files[0] || !titleVal || !descVal) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Img = event.target.result;
+                
+                try {
+                    const response = await fetch(`${SERVER_URL}/api/announcements`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            title: titleVal,
+                            desc: descVal,
+                            image: base64Img,
+                            timestamp: Date.now()
+                        })
+                    });
+
+                    if(response.ok) {
+                        alert("Important announcement broadcasted via Node.js server system successfully!");
+                        document.getElementById('adminImportantPostForm').reset();
+                    } else {
+                        alert("Failed to sync notice post submission on server endpoint nodes.");
+                    }
+                } catch (error) {
+                    console.error("Transmission error:", error);
+                    alert("Network processing error connection failed.");
+                }
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        };
+
+        adminRemoveImportantNoticePost = async function(id) {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/announcements/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if(response.ok) {
+                    alert("Announcement notice removed from server database system.");
+                } else {
+                    alert("Error processing deletion request node command execution.");
+                }
+            } catch (error) {
+                console.error("Network error:", error);
+                alert("Server interface connectivity issue occurred.");
+            }
+        };
+
+        // Standard visual helpers definition placeholder to avoid breakage if called inline
+        if (typeof toggleModal !== 'function') {
+            window.toggleModal = function(id) {
+                const target = document.getElementById(id);
+                if (target) target.classList.toggle('hidden');
+            };
+        }
+
+        if (typeof navigateTo !== 'function') {
+            window.navigateTo = function(pageId) {
+                document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+                const targetPage = document.getElementById(pageId + 'Page');
+                if (targetPage) targetPage.classList.remove('hidden');
+            };
+        }
+
+        if (typeof toggleMoreDropdown !== 'function') {
+            window.toggleMoreDropdown = function(e) {
+                if (e) e.stopPropagation();
+                const menu = document.getElementById('moreMenuDropdown');
+                if (menu) menu.classList.toggle('hidden');
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupInitialProfileState();
+        });
+    </script>
+</body>
+</html>
