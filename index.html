@@ -1,29 +1,1479 @@
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-    import { getDatabase, ref, push, set, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexMarket | Buy & Sell Everything</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #3b82f6;
+            --secondary: #002f34; /* OLX Signature Greenish Black */
+        }
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAp_keh__iwrX9cDRyOV5jhrkIH8fB69vo",
-        authDomain: "nexmarket4.firebaseapp.com",
-        databaseURL: "https://nexmarket4-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "nexmarket4",
-        storageBucket: "nexmarket4.firebasestorage.app",
-        messagingSenderId: "759937817393",
-        appId: "1:759937817393:web:c4c6a2a5d70f616ef96e10"
-    };
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+        /* Category Section Styles */
+        .olx-categories-container {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
 
-    // Global variables
-    window.db = db;
-    window.ref = ref;
-    window.push = push;
-    window.set = set;
-    window.remove = remove;
-</script>
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 20px;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
 
-<script>
-    // Aapke functions jo main ne diye thay (handleImportantPostSubmit aur adminRemoveImportantNoticePost)
-    // Inhe yahan paste karein
-</script>
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .category-item:hover {
+            background-color: #f0f9ff;
+            transform: translateY(-3px);
+        }
+
+        .category-icon-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 26px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .category-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--secondary);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 640px) {
+            .categories-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                padding: 0 10px;
+            }
+            .category-icon-circle {
+                width: 52px;
+                height: 52px;
+                font-size: 20px;
+            }
+            .category-label {
+                font-size: 11px;
+            }
+        }
+
+        /* Existing Styles */
+        .product-card:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .featured-badge { background: linear-gradient(45deg, #f59e0b, #fbbf24); }
+    </style>
+</head>
+<body class="pb-20 md:pb-0">
+
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
+                <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-shopping-bag text-white"></i></div>
+                <span class="text-xl font-bold text-slate-800 hidden md:block">NexMarket</span>
+            </div>
+            <div class="flex-1 max-w-xl relative min-w-[200px]">
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search cars, mobiles, and more..." class="w-full bg-gray-100 border-none rounded-full py-2 px-10 focus:ring-2 focus:ring-blue-500 outline-none">
+                <i class="fas fa-search absolute left-4 top-3 text-gray-400"></i>
+            </div>
+            <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4 flex-1 sm:flex-none relative">
+                <button onclick="navigateTo('home')" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 py-1">Home</button>
+                <button onclick="toggleModal('sellModal')" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 py-1">Sell</button>
+                
+                <div class="relative inline-block text-left">
+                    <button onclick="toggleMoreDropdown(event)" class="text-gray-600 hover:text-blue-600 font-semibold text-sm px-2 py-1 flex items-center gap-1 outline-none">
+                        More <i class="fas fa-chevron-down text-xs transition-transform duration-200" id="moreDropdownIcon"></i>
+                    </button>
+                    <div id="moreMenuDropdown" class="absolute right-0 mt-2 w-48 rounded-xl bg-white border border-gray-100 shadow-xl hidden z-50 overflow-hidden py-1">
+                        <button onclick="navigateTo('about'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 font-medium flex items-center gap-2"><i class="fas fa-info-circle text-gray-400 w-4"></i>About</button>
+                        <button onclick="filterCategory('vehicles'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 font-medium flex items-center gap-2"><i class="fas fa-car text-gray-400 w-4"></i>Brand</button>
+                        <button onclick="window.scrollTo({top: document.getElementById('categoriesSection').offsetTop - 80, behavior: 'smooth'}); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 font-medium flex items-center gap-2"><i class="fas fa-th-large text-gray-400 w-4"></i>Categories</button>
+                        <button onclick="toggleModal('feedbackModal'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-teal-600 hover:bg-teal-50/50 font-medium flex items-center gap-2"><i class="fas fa-bullhorn w-4"></i>Feedback</button>
+                        <button onclick="openUserSupportInbox(); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50/50 font-medium flex items-center gap-2 relative">
+                            <i class="fas fa-comments w-4"></i>Support Inbox
+                            <span id="userInboxBadge" class="absolute right-3 top-3 bg-indigo-600 text-white text-[9px] w-3 h-3 rounded-full flex items-center justify-center hidden">!</span>
+                        </button>
+                        <button id="adminPanelNavBtn" onclick="navigateTo('admin'); toggleMoreDropdown(event);" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50/50 font-bold hidden border-t border-gray-100"><i class="fas fa-user-shield w-4"></i>Admin</button>
+                    </div>
+                </div>
+
+                <button onclick="toggleModal('profileModal')" class="bg-gray-100 text-slate-700 px-4 py-2 rounded-full font-semibold hover:bg-gray-200 transition text-sm flex items-center gap-2">
+                    <i class="fas fa-user"></i> <span id="navProfileName">Profile</span>
+                </button>
+                <button onclick="toggleModal('sellModal')" class="bg-blue-600 text-white px-5 py-2 rounded-full font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition text-sm">
+                    <i class="fas fa-plus mr-1"></i> SELL
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="importantAnnouncementsContainer" class="max-w-7xl mx-auto px-4 mt-6 hidden">
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+            <h3 class="text-sm font-extrabold text-amber-900 mb-3 flex items-center gap-2">
+                <i class="fas fa-bullhorn text-amber-600 animate-bounce"></i> Important Updates & Notices
+            </h3>
+            <div id="importantPostsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+        </div>
+    </div>
+
+    <section id="categoriesSection" class="olx-categories-container">
+        <div class="categories-grid">
+            <a href="?cat=mobiles" onclick="event.preventDefault(); filterCategory('mobiles');" class="category-item">
+                <div class="category-icon-circle" style="color: #3b82f6;"><i class="fas fa-mobile-alt"></i></div>
+                <span class="category-label">Mobiles</span>
+            </a>
+            <a href="?cat=vehicles" onclick="event.preventDefault(); filterCategory('vehicles');" class="category-item">
+                <div class="category-icon-circle" style="color: #ef4444;"><i class="fas fa-car"></i></div>
+                <span class="category-label">Vehicles</span>
+            </a>
+            <a href="?cat=property-sale" onclick="event.preventDefault(); filterCategory('property-sale');" class="category-item">
+                <div class="category-icon-circle" style="color: #10b981;"><i class="fas fa-building"></i></div>
+                <span class="category-label">Property for Sale</span>
+            </a>
+            <a href="?cat=property-rent" onclick="event.preventDefault(); filterCategory('property-rent');" class="category-item">
+                <div class="category-icon-circle" style="color: #f59e0b;"><i class="fas fa-home"></i></div>
+                <span class="category-label">Property for Rent</span>
+            </a>
+            <a href="?cat=electronics" onclick="event.preventDefault(); filterCategory('electronics');" class="category-item">
+                <div class="category-icon-circle" style="color: #6366f1;"><i class="fas fa-plug"></i></div>
+                <span class="category-label">Electronics & Appliances</span>
+            </a>
+            <a href="?cat=bikes" onclick="event.preventDefault(); filterCategory('bikes');" class="category-item">
+                <div class="category-icon-circle" style="color: #ec4899;"><i class="fas fa-motorcycle"></i></div>
+                <span class="category-label">Bikes</span>
+            </a>
+            <a href="?cat=business" onclick="event.preventDefault(); filterCategory('business');" class="category-item">
+                <div class="category-icon-circle" style="color: #0d9488;"><i class="fas fa-briefcase"></i></div>
+                <span class="category-label">Business & Industrial</span>
+            </a>
+            <a href="?cat=services" onclick="event.preventDefault(); filterCategory('services');" class="category-item">
+                <div class="category-icon-circle" style="color: #8b5cf6;"><i class="fas fa-tools"></i></div>
+                <span class="category-label">Services</span>
+            </a>
+            <a href="?cat=jobs" onclick="event.preventDefault(); filterCategory('jobs');" class="category-item">
+                <div class="category-icon-circle" style="color: #f43f5e;"><i class="fas fa-user-md"></i></div>
+                <span class="category-label">Jobs</span>
+            </a>
+            <a href="?cat=animals" onclick="event.preventDefault(); filterCategory('animals');" class="category-item">
+                <div class="category-icon-circle" style="color: #854d0e;"><i class="fas fa-paw"></i></div>
+                <span class="category-label">Animals</span>
+            </a>
+            <a href="?cat=furniture" onclick="event.preventDefault(); filterCategory('furniture');" class="category-item">
+                <div class="category-icon-circle" style="color: #78350f;"><i class="fas fa-couch"></i></div>
+                <span class="category-label">Furniture & Decor</span>
+            </a>
+            <a href="?cat=fashion" onclick="event.preventDefault(); filterCategory('fashion');" class="category-item">
+                <div class="category-icon-circle" style="color: #db2777;"><i class="fas fa-tshirt"></i></div>
+                <span class="category-label">Fashion & Beauty</span>
+            </a>
+            <a href="?cat=hobbies" onclick="event.preventDefault(); filterCategory('hobbies');" class="category-item">
+                <div class="category-icon-circle" style="color: #2563eb;"><i class="fas fa-guitar"></i></div>
+                <span class="category-label">Books & Hobbies</span>
+            </a>
+            <a href="?cat=kids" onclick="event.preventDefault(); filterCategory('kids');" class="category-item">
+                <div class="category-icon-circle" style="color: #fbbf24;"><i class="fas fa-baby-carriage"></i></div>
+                <span class="category-label">Kids</span>
+            </a>
+        </div>
+    </section>
+
+    <main id="homePage" class="max-w-7xl mx-auto px-4 py-8 page-view">
+        <div id="featuredSection" class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="featuredTitle" class="text-2xl font-bold text-slate-800">Featured Ads</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="featuredGrid"></div>
+        </div>
+
+        <div>
+            <h2 id="freshTitle" class="text-2xl font-bold text-slate-800 mb-6">Fresh Recommendations</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="freshGrid"></div>
+        </div>
+    </main>
+
+    <main id="aboutPage" class="max-w-4xl mx-auto px-4 py-12 page-view hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h1 class="text-3xl font-bold text-slate-800 mb-6">About NexMarketplace</h1>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                Welcome to NexMarketplace, your number one source for all things buying and selling. We're dedicated to providing you the very best platform for classified ads, with an emphasis on reliability, ease of use, and local community connection.
+            </p>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                Founded with a vision to streamline digital peer-to-peer commerce, NexMarketplace has come a long way from its beginnings. Our platform allows users from all over the country to list products, find jobs, search for properties, and discover fresh recommendations effortlessly.
+            </p>
+            <p class="text-gray-600 leading-relaxed mb-4">
+                We hope you enjoy our platform as much as we enjoy offering it to you. If you have any questions or comments, please don't hesitate to contact us.
+            </p>
+            <div class="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-500">
+                &copy; 2026 NexMarketplace Inc. All rights reserved.
+            </div>
+        </div>
+    </main>
+
+    <main id="adminPage" class="max-w-7xl mx-auto px-4 py-8 page-view hidden">
+        <div class="bg-slate-900 text-white p-6 rounded-2xl mb-8 flex justify-between items-center shadow-lg">
+            <div>
+                <h1 class="text-2xl font-bold"><i class="fas fa-user-shield mr-2 text-red-500"></i>Admin Central Dashboard</h1>
+                <p class="text-slate-400 text-sm mt-1">Logged In Securely as System Administrator</p>
+            </div>
+            <span class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">Master Access</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="space-y-6">
+                <div class="bg-amber-50 p-6 rounded-2xl border border-amber-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-amber-900 mb-3 border-b border-amber-200 pb-2">
+                        <i class="fas fa-plus-circle mr-2 text-amber-700"></i>Create Important Post
+                    </h3>
+                    <form id="adminImportantPostForm" onsubmit="handleImportantPostSubmit(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Notice Banner Image</label>
+                            <input type="file" id="importantPostImage" accept="image/*" required class="w-full text-xs bg-white border p-1 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Headline Title</label>
+                            <input type="text" id="importantPostTitle" required placeholder="e.g. Eid Mubarak Special" class="w-full border rounded p-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-800 mb-1">Short Notice Description</label>
+                            <textarea id="importantPostDesc" required rows="2" placeholder="Write announcement brief text here..." class="w-full border rounded p-2 text-sm outline-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 rounded-lg transition shadow">
+                            Broadcast Announcement
+                        </button>
+                    </form>
+                    <div id="adminImportantPostsManagementList" class="mt-4 space-y-2 max-h-[20vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-users mr-2 text-blue-500"></i>Logged-in Users</h3>
+                    <div id="adminUsersList" class="space-y-4 max-h-[25vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 text-teal-600 flex justify-between items-center">
+                        <span><i class="fas fa-bullhorn mr-2"></i>User Feedback Box</span>
+                        <span id="feedbackCountBadge" class="bg-teal-100 text-teal-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                    </h3>
+                    <div id="adminFeedbackList" class="space-y-3 max-h-[35vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 text-indigo-600"><i class="fas fa-comments mr-2"></i>Support Chat Channels</h3>
+                    <div id="adminChatThreadsContainer" class="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-8">
+                <div id="adminChatWindowBox" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hidden flex flex-col h-[450px]">
+                    <div class="border-b pb-3 flex justify-between items-center bg-indigo-50/50 p-3 rounded-xl">
+                        <div>
+                            <span class="text-[11px] font-bold text-indigo-500 block uppercase">Active Secure Chat Thread</span>
+                            <h4 id="adminActiveChatUserTitle" class="text-sm font-bold text-slate-800">Select User</h4>
+                        </div>
+                        <button onclick="closeAdminChatWindow()" class="text-gray-400 hover:text-black"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="adminChatMessagesArea" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50 rounded-xl my-3"></div>
+                    <form id="adminChatSubmitForm" onsubmit="handleAdminChatSend(event)" class="flex gap-2">
+                        <input type="text" id="adminChatTextInput" required placeholder="Type text response message..." class="flex-1 text-sm border rounded-xl px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 text-sm rounded-xl transition shadow">Reply</button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                        <span><i class="fas fa-clock mr-2 text-amber-500"></i>Pending Post Approvals Queue</span>
+                        <span id="pendingCountBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                    </h3>
+                    <div id="adminPendingGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-1 custom-scrollbar"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-th-list mr-2 text-emerald-500"></i>Manage Active Public Listings</h3>
+                    <div id="adminActiveGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-1 custom-scrollbar"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="feedbackModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center bg-teal-50">
+                <h3 class="text-xl font-bold text-teal-950"><i class="fas fa-bullhorn mr-2 text-teal-600"></i>Submit Ad Feedback</h3>
+                <button onclick="toggleModal('feedbackModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <form id="userFeedbackForm" class="p-6 space-y-4" onsubmit="handleFeedbackSubmit(event)">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Your Feedback / Message</label>
+                    <textarea id="feedbackMsgTextarea" required rows="4" placeholder="Enter text details regarding system experience..." class="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg transition shadow">
+                    Submit Persistent Feedback
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="userSupportInboxModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]">
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-50">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-comments text-indigo-600 text-lg"></i>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Helpdesk Support Inbox</h3>
+                        <p class="text-[10px] text-gray-500">Text Only Protocol Messaging System</p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('userSupportInboxModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div id="userChatMessagesArea" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50"></div>
+            <form id="userChatSubmitForm" onsubmit="handleUserChatSend(event)" class="p-3 border-t bg-white flex gap-2">
+                <input type="text" id="userChatTextInput" required placeholder="Type text query message..." class="flex-1 text-sm border rounded-xl px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 text-sm rounded-xl transition shadow">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="sellModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Post Your Ad</h3>
+                <button onclick="toggleModal('sellModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <form id="addAdForm" class="space-y-4" onsubmit="handleFormSubmit(event)">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <label class="cursor-pointer border-2 border-blue-500 bg-white p-3 rounded-lg block relative">
+                            <input type="radio" name="postPlanType" value="free" checked onchange="toggleFormPlanFields('free')" class="absolute top-3 right-3 text-blue-600">
+                            <span class="block font-bold text-slate-800 text-sm">Free Post</span>
+                            <span class="block text-xs text-gray-400 mt-1">Normal layout sequence listing. Subject to approval.</span>
+                        </label>
+                        <label class="cursor-pointer border border-gray-200 hover:border-blue-300 bg-white p-3 rounded-lg block relative">
+                            <input type="radio" name="postPlanType" value="paid" onchange="toggleFormPlanFields('paid')" class="absolute top-3 right-3 text-blue-600">
+                            <span class="block font-bold text-amber-600 text-sm flex items-center gap-1">
+                                <i class="fas fa-star text-xs"></i> Paid Featured Post
+                            </span>
+                            <span class="block text-xs text-gray-400 mt-1">Stays at top layout layers. Premium placement.</span>
+                        </label>
+                    </div>
+
+                    <div id="jazzcashPaymentFields" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-3 animate-fade-in">
+                        <div class="text-xs text-amber-900 font-medium space-y-1">
+                            <p class="font-bold text-sm text-amber-950 mb-1"><i class="fas fa-wallet text-amber-600 mr-1"></i>JazzCash Transfer Account Details:</p>
+                            <p><strong>Account Number:</strong> 03069348405</p>
+                            <p><strong>Holder Name:</strong> Imtiaz Ali</p>
+                            <p class="text-[11px] text-amber-700 mt-1">Please transfer the fee amount to the above number, then copy and paste your secure 11-Digit Transaction ID tracking code parameters below.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">JazzCash Transaction ID (TID) *</label>
+                            <input type="text" id="formTransactionId" placeholder="Enter transaction reference ID" class="w-full border rounded-lg p-2 text-sm bg-white outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Select Category *</label>
+                        <select id="formCategory" required onchange="handleCategoryFormSwitch(this.value)" class="w-full border rounded-lg p-2 bg-white outline-none focus:border-blue-500 font-medium">
+                            <option value="" disabled selected>Choose a category first</option>
+                            <option value="mobiles">Mobiles</option>
+                            <option value="vehicles">Vehicles / Cars</option>
+                            <option value="bikes">Bikes</option>
+                            <option value="property-sale">Property for Sale</option>
+                            <option value="property-rent">Property for Rent</option>
+                            <option value="jobs">Jobs</option>
+                            <option value="animals">Animals</option>
+                            <option value="electronics">Electronics & Home Appliances</option>
+                            <option value="business">Business & Industrial</option>
+                            <option value="services">Services</option>
+                            <option value="furniture">Furniture & Home Decor</option>
+                            <option value="fashion">Fashion & Beauty</option>
+                            <option value="hobbies">Books, Sports & Hobbies</option>
+                            <option value="kids">Kids</option>
+                        </select>
+                    </div>
+
+                    <div id="dynamicFieldsContainer" class="space-y-4">
+                        <p class="text-sm text-gray-400 py-4 text-center">Please select a category above to load the accurate form parameters.</p>
+                    </div>
+
+                    <div id="sharedFormBottom" class="space-y-4 hidden border-t border-gray-100 pt-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Seller Name *</label>
+                                <input type="text" id="formSellerName" required placeholder="Your Name" class="w-full border rounded-lg p-2 outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Contact Number *</label>
+                                <input type="tel" id="formContact" required placeholder="e.g. 03001234567" class="w-full border rounded-lg p-2 outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">City / Location *</label>
+                            <input type="text" id="citySearchInput" required onfocus="showCityDropdown()" oninput="filterCities(this.value)" placeholder="Search and select city..." autocomplete="off" class="w-full border rounded-lg p-2 outline-none focus:border-blue-500">
+                            <div id="cityDropdownList" class="absolute left-0 right-0 mt-1 max-h-48 bg-white border border-gray-200 rounded-lg shadow-lg overflow-y-auto hidden z-50 custom-scrollbar"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Product Images (Max 3) *</label>
+                            <div class="flex items-center gap-2 mt-1">
+                                <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center w-24 h-24 text-center transition">
+                                    <i class="fas fa-camera text-gray-400 text-lg"></i>
+                                    <span class="text-[10px] text-gray-500 mt-1">Upload</span>
+                                    <input type="file" id="formImages" accept="image/*" multiple max="3" onchange="handleImageUpload(event)" class="hidden">
+                                </label>
+                                <div id="imagePreviewContainer" class="flex gap-2"></div>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">First uploaded image will be used as the main cover photo.</p>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-200 mt-4">
+                            Post Ad For Approval
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-id-card mr-2 text-blue-500"></i>User Profile</h3>
+                <button onclick="toggleModal('profileModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <form id="profileForm" class="p-6 space-y-4" onsubmit="handleProfileSubmit(event)">
+                <div class="flex flex-col items-center mb-4">
+                    <div class="relative w-24 h-24 bg-slate-100 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center group mb-2">
+                        <img id="profileImageDisplay" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150" class="w-full h-full object-cover">
+                        <label class="absolute inset-0 bg-black/40 text-white text-[10px] font-bold flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition">
+                            <i class="fas fa-edit text-sm mb-0.5"></i>Change
+                            <input type="file" id="profileImageInput" accept="image/*" onchange="handleProfileImageUpload(event)" class="hidden">
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-400">Click avatar to alter user image</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="profileNameInput" required placeholder="Enter profile user name" class="w-full border rounded-lg p-2 outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Mobile/Login ID Number</label>
+                    <input type="text" id="profilePhoneInput" required placeholder="Enter login phone identifier number" class="w-full border rounded-lg p-2 outline-none focus:border-blue-500">
+                </div>
+                <div id="adminNoticeTag" class="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg font-medium hidden">
+                    <i class="fas fa-info-circle mr-1"></i> Special code configuration matching Admin privileges detected.
+                </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg transition shadow">
+                    Save Profile Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="detailsModal" class="fixed inset-0 z-[100] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="modalProductTitle" class="text-xl font-bold text-slate-800">Product Details</h3>
+                <button onclick="toggleModal('detailsModal')" class="text-gray-400 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto space-y-4">
+                <div class="relative w-full h-64 bg-slate-900 rounded-xl overflow-hidden group">
+                    <img id="modalProductImage" src="" class="w-full h-full object-contain">
+                    <button id="prevImgBtn" onclick="changeGalleryImage(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow hover:bg-white text-gray-700 text-xs transition"><i class="fas fa-chevron-left"></i></button>
+                    <button id="nextImgBtn" onclick="changeGalleryImage(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow hover:bg-white text-gray-700 text-xs transition"><i class="fas fa-chevron-right"></i></button>
+                    <div id="galleryIndicator" class="absolute bottom-2 right-2 bg-black/60 text-white text-[11px] px-2 py-0.5 rounded"></div>
+                </div>
+                <div class="flex flex-wrap justify-between items-start gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="modalProductPrice" class="text-2xl font-extrabold text-blue-600"></h2>
+                        </div>
+                        <p id="modalProductLocationAndTime" class="text-gray-500 text-xs mt-1"></p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-xs min-w-[150px]">
+                        <p class="text-gray-400 font-medium">Seller Profile</p>
+                        <p id="modalSellerName" class="font-bold text-slate-800 text-sm mt-0.5"></p>
+                        <p id="modalSellerContact" class="text-blue-600 font-semibold mt-1"><i class="fas fa-phone-alt mr-1"></i></p>
+                    </div>
+                </div>
+                <div id="modalExtraSpecsContainer" class="flex flex-wrap gap-2 text-xs"></div>
+                <hr class="border-gray-200">
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-1">Description</h4>
+                    <p id="modalProductDescription" class="text-gray-600 text-sm leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const citiesList = ["Hyderabad", "Karachi", "Tando Adam", "Nawabshah", "Mirpur Khas", "Kandiyaro", "Berani", "Jam Nawaz Ali", "Islamabad", "Lahore", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta"];
+
+        // Global States
+        let products = [];
+        let registeredUsers = [];
+        let currentUserProfile = JSON.parse(localStorage.getItem('olx_user_profile_v3')) || null;
+        let feedbackSystemData = [];
+        let globalSupportChats = [];
+        let importantPosts = [];
+
+        let isAdminActive = false;
+        let currentCategory = null;
+        let searchQuery = '';
+        let uploadedImagesBase64 = [];
+        let tempProfileImageBase64 = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150';
+        let adminSelectedUserChatId = null;
+
+        let activeGalleryImages = [];
+        let activeGalleryIndex = 0;
+
+        // Functions to be triggered from UI
+        let handleFormSubmit, handleFeedbackSubmit, handleProfileSubmit, handleUserChatSend, handleAdminChatSend;
+        let adminAuthorizePost, adminDeleteFeedback, handleImportantPostSubmit, adminRemoveImportantNoticePost;
+
+        // Toggle More Dropdown
+        function toggleMoreDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('moreMenuDropdown');
+            const icon = document.getElementById('moreDropdownIcon');
+            dropdown.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+
+        // Close dropdown when clicking anywhere else
+        document.addEventListener('click', function() {
+            const dropdown = document.getElementById('moreMenuDropdown');
+            const icon = document.getElementById('moreDropdownIcon');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        });
+
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
+            if (pageId === 'home') document.getElementById('homePage').classList.remove('hidden');
+            else if (pageId === 'about') document.getElementById('aboutPage').classList.remove('hidden');
+            else if (pageId === 'admin') {
+                if (!isAdminActive) {
+                    alert("Unauthorized Access Prohibited.");
+                    document.getElementById('homePage').classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('adminPage').classList.remove('hidden');
+                renderAdminDashboard();
+            }
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function toggleModal(id) {
+            document.getElementById(id).classList.toggle('hidden');
+            if (id === 'profileModal' && currentUserProfile) {
+                document.getElementById('profileNameInput').value = currentUserProfile.name || '';
+                document.getElementById('profilePhoneInput').value = currentUserProfile.phone || '';
+                document.getElementById('profileImageDisplay').src = currentUserProfile.avatar || tempProfileImageBase64;
+                toggleAdminNoticeTag(currentUserProfile.name, currentUserProfile.phone);
+            }
+        }
+
+        function toggleFormPlanFields(plan) {
+            const jcFields = document.getElementById('jazzcashPaymentFields');
+            if (plan === 'paid') {
+                jcFields.classList.remove('hidden');
+                document.getElementById('formTransactionId').required = true;
+            } else {
+                jcFields.classList.add('hidden');
+                document.getElementById('formTransactionId').required = false;
+            }
+        }
+
+        function toggleAdminNoticeTag(name, phone) {
+            const tag = document.getElementById('adminNoticeTag');
+            if (name === "imtiazalee786110" || phone === "imtiazalee786110") {
+                tag.classList.remove('hidden');
+            } else {
+                tag.classList.add('hidden');
+            }
+        }
+
+        function handleProfileImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempProfileImageBase64 = event.target.result;
+                document.getElementById('profileImageDisplay').src = tempProfileImageBase64;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleImageUpload(e) {
+            const files = Array.from(e.target.files);
+            if (uploadedImagesBase64.length + files.length > 3) {
+                alert("You can upload a maximum of 3 images only.");
+                return;
+            }
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    uploadedImagesBase64.push(event.target.result);
+                    renderImagePreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderImagePreviews() {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            uploadedImagesBase64.forEach((img, idx) => {
+                container.innerHTML += `
+                    <div class="relative w-24 h-24 rounded-lg border overflow-hidden bg-gray-50">
+                        <img src="${img}" class="w-full h-full object-cover">
+                        <button type="button" onclick="removeUploadedImage(${idx})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center shadow"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function removeUploadedImage(idx) {
+            uploadedImagesBase64.splice(idx, 1);
+            renderImagePreviews();
+        }
+
+        function showCityDropdown() {
+            const list = document.getElementById('cityDropdownList');
+            list.classList.remove('hidden');
+            filterCities('');
+        }
+
+        function filterCities(val) {
+            const list = document.getElementById('cityDropdownList');
+            list.innerHTML = '';
+            const query = val.toLowerCase().trim();
+            const filtered = citiesList.filter(c => c.toLowerCase().includes(query));
+            if(filtered.length === 0) {
+                list.innerHTML = `<p class="p-2 text-xs text-gray-400 text-center">No city matched</p>`;
+                return;
+            }
+            filtered.forEach(city => {
+                list.innerHTML += `<div onclick="selectCityName('${city}')" class="p-2.5 hover:bg-slate-50 text-xs text-slate-700 font-medium cursor-pointer transition border-b border-gray-100 last:border-none">${city}</div>`;
+            });
+        }
+
+        function selectCityName(city) {
+            document.getElementById('citySearchInput').value = city;
+            document.getElementById('cityDropdownList').classList.add('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.id !== 'citySearchInput') {
+                const list = document.getElementById('cityDropdownList');
+                if(list) list.classList.add('hidden');
+            }
+        });
+
+        function handleCategoryFormSwitch(cat) {
+            const container = document.getElementById('dynamicFieldsContainer');
+            document.getElementById('sharedFormBottom').classList.remove('hidden');
+            container.innerHTML = '';
+
+            let fieldsHTML = `
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Ad Title *</label>
+                    <input type="text" id="formTitle" required placeholder="Brand name, model, item spec..." class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Price (PKR) *</label>
+                    <input type="number" id="formPrice" required placeholder="Enter expected selling amount" class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Detailed Description *</label>
+                    <textarea id="formDesc" required rows="4" placeholder="Mention item condition, details, features..." class="w-full border rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm"></textarea>
+                </div>
+            `;
+
+            if (cat === 'mobiles') {
+                fieldsHTML += `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Brand Name *</label>
+                            <input type="text" id="formBrand" required placeholder="Apple, Samsung etc." class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Model *</label>
+                            <input type="text" id="formModel" required placeholder="iPhone 15, S24" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">PTA Status *</label>
+                            <select id="formPta" required class="w-full border rounded-lg p-2 bg-white text-xs">
+                                <option value="Approved">Approved</option>
+                                <option value="Compliant">Compliant</option>
+                                <option value="Non-Approved">Non-Approved</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">RAM Size</label>
+                            <input type="text" id="formRam" placeholder="8 GB, 12 GB" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Storage</label>
+                            <input type="text" id="formStorage" placeholder="126GB, 256GB" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                    </div>
+                `;
+            } else if (cat === 'vehicles') {
+                fieldsHTML += `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Brand / Make *</label>
+                            <input type="text" id="formBrand" required placeholder="Toyota, Honda" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Model Name *</label>
+                            <input type="text" id="formModel" required placeholder="Corolla, Civic" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Year of Manufacture *</label>
+                            <input type="number" id="formYear" required placeholder="2023" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Kilometers Driven *</label>
+                            <input type="number" id="formKm" required placeholder="45000" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Fuel Type *</label>
+                            <select id="formFuel" required class="w-full border rounded-lg p-2 bg-white text-xs">
+                                <option value="Petrol">Petrol</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="CNG">CNG</option>
+                                <option value="Hybrid">Hybrid</option>
+                                <option value="Electric">Electric</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Registration City *</label>
+                            <input type="text" id="formRegCity" required placeholder="Karachi, Lahore" class="w-full border rounded-lg p-2 text-xs">
+                        </div>
+                    </div>
+                `;
+            } else {
+                fieldsHTML += `
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Condition Parameters</label>
+                        <input type="text" id="formCondition" placeholder="New, Used, Like New..." class="w-full border rounded-lg p-2.5 text-sm">
+                    </div>
+                `;
+            }
+            container.innerHTML = fieldsHTML;
+        }
+
+        function renderProducts() {
+            const featGrid = document.getElementById('featuredGrid');
+            const freshGrid = document.getElementById('freshGrid');
+            if(!featGrid || !freshGrid) return;
+
+            featGrid.innerHTML = '';
+            freshGrid.innerHTML = '';
+
+            let dataset = products.filter(p => p.status === 'approved');
+            if (currentCategory) dataset = dataset.filter(p => p.category === currentCategory);
+            if (searchQuery) dataset = dataset.filter(p => p.title.toLowerCase().includes(searchQuery) || p.desc.toLowerCase().includes(searchQuery));
+
+            const featuredItems = dataset.filter(p => p.featured === true);
+            const standardItems = dataset.filter(p => p.featured !== true);
+
+            if(featuredItems.length === 0) {
+                document.getElementById('featuredSection').classList.add('hidden');
+            } else {
+                document.getElementById('featuredSection').classList.remove('hidden');
+                featuredItems.forEach(p => { featGrid.innerHTML += generateCardHTML(p, true); });
+            }
+
+            if(standardItems.length === 0 && featuredItems.length === 0) {
+                freshGrid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400 text-sm"><i class="fas fa-box-open text-2xl block mb-2"></i>No active verified listing meets search filters criteria.</div>`;
+            } else {
+                standardItems.forEach(p => { freshGrid.innerHTML += generateCardHTML(p, false); });
+            }
+        }
+
+        function generateCardHTML(p, isFeat) {
+            return `
+                <div onclick="viewProductDetail('${p.id}')" class="bg-white border rounded-xl overflow-hidden shadow-sm product-card cursor-pointer flex flex-col justify-between relative">
+                    ${isFeat ? '<span class="absolute top-2 left-2 text-[10px] font-extrabold text-white px-2 py-0.5 rounded shadow z-10 featured-badge"><i class="fas fa-crown mr-0.5"></i>FEATURED</span>' : ''}
+                    <div class="w-full h-40 bg-slate-50 overflow-hidden relative">
+                        <img src="${p.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=300'}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-800 line-clamp-1">${p.title}</h3>
+                            <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-map-marker-alt text-[10px]"></i> ${p.city}</p>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
+                            <span class="text-sm font-black text-blue-600">Rs ${p.price}</span>
+                            <span class="text-[9px] font-medium text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">${p.time}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            renderProducts();
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            window.scrollTo({top: document.getElementById('categoriesSection').offsetTop - 20, behavior: 'smooth'});
+            renderProducts();
+        }
+
+        function viewProductDetail(id) {
+            const p = products.find(prod => prod.id == id);
+            if (!p) return;
+
+            activeGalleryImages = p.images || [];
+            activeGalleryIndex = 0;
+
+            document.getElementById('modalProductTitle').innerText = p.title;
+            document.getElementById('modalProductPrice').innerText = `Rs ${p.price}`;
+            document.getElementById('modalProductLocationAndTime').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${p.city} &bull; <i class="fas fa-clock"></i> ${p.time}`;
+            document.getElementById('modalProductDescription').innerText = p.desc;
+            document.getElementById('modalSellerName').innerText = p.sellerName || 'Anonymous Seller';
+            document.getElementById('modalSellerContact').innerHTML = `<a href="tel:${p.contact}"><i class="fas fa-phone-alt mr-1"></i> ${p.contact || 'No Contact'}</a>`;
+
+            const specs = document.getElementById('modalExtraSpecsContainer');
+            specs.innerHTML = '';
+            const badgeStyle = "bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded-full border border-slate-200/60";
+
+            if (p.category === 'mobiles') {
+                if(p.brand) specs.innerHTML += `<span class="${badgeStyle}">Brand: ${p.brand}</span>`;
+                if(p.model) specs.innerHTML += `<span class="${badgeStyle}">Model: ${p.model}</span>`;
+                if(p.pta) specs.innerHTML += `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full font-bold">PTA: ${p.pta}</span>`;
+                if(p.ram) specs.innerHTML += `<span class="${badgeStyle}">RAM: ${p.ram}</span>`;
+                if(p.storage) specs.innerHTML += `<span class="${badgeStyle}">Storage: ${p.storage}</span>`;
+            } else if (p.category === 'vehicles') {
+                if(p.brand) specs.innerHTML += `<span class="${badgeStyle}">Make: ${p.brand}</span>`;
+                if(p.model) specs.innerHTML += `<span class="${badgeStyle}">Model: ${p.model}</span>`;
+                if(p.year) specs.innerHTML += `<span class="${badgeStyle}">Year: ${p.year}</span>`;
+                if(p.kmDriven) specs.innerHTML += `<span class="${badgeStyle}">Driven: ${p.kmDriven} KM</span>`;
+                if(p.fuelType) specs.innerHTML += `<span class="${badgeStyle}">Fuel: ${p.fuelType}</span>`;
+                if(p.regCity) specs.innerHTML += `<span class="${badgeStyle}">Registered: ${p.regCity}</span>`;
+            } else {
+                if(p.condition) specs.innerHTML += `<span class="${badgeStyle}">Condition: ${p.condition}</span>`;
+            }
+
+            updateGalleryUI();
+            toggleModal('detailsModal');
+        }
+
+        function updateGalleryUI() {
+            const display = document.getElementById('modalProductImage');
+            const indicator = document.getElementById('galleryIndicator');
+            const prev = document.getElementById('prevImgBtn');
+            const next = document.getElementById('nextImgBtn');
+
+            display.src = activeGalleryImages[activeGalleryIndex];
+            indicator.innerText = `${activeGalleryIndex + 1} / ${activeGalleryImages.length}`;
+
+            if (activeGalleryImages.length <= 1) {
+                prev.style.display = 'none';
+                next.style.display = 'none';
+            } else {
+                prev.style.display = 'block';
+                next.style.display = 'block';
+            }
+        }
+
+        function changeGalleryImage(dir) {
+            activeGalleryIndex += dir;
+            if (activeGalleryIndex >= activeGalleryImages.length) activeGalleryIndex = 0;
+            if (activeGalleryIndex < 0) activeGalleryIndex = activeGalleryImages.length - 1;
+            updateGalleryUI();
+        }
+
+        function openUserSupportInbox() {
+            toggleModal('userSupportInboxModal');
+            if (typeof window.syncUserChatUI === 'function') window.syncUserChatUI();
+        }
+
+        function closeAdminChatWindow() {
+            document.getElementById('adminChatWindowBox').classList.add('hidden');
+            adminSelectedUserChatId = null;
+            if (typeof window.syncAdminChatUI === 'function') window.syncAdminChatUI();
+        }
+
+        function renderAdminDashboard() {
+            if(!isAdminActive) return;
+
+            const pendingList = products.filter(p => p.status === 'pending');
+            const activeList = products.filter(p => p.status === 'approved');
+
+            document.getElementById('pendingCountBadge').innerText = pendingList.length;
+            document.getElementById('feedbackCountBadge').innerText = feedbackSystemData.length;
+
+            const pendingGrid = document.getElementById('adminPendingGrid');
+            pendingGrid.innerHTML = '';
+            if(pendingList.length === 0) {
+                pendingGrid.innerHTML = `<p class="col-span-full text-center py-6 text-xs text-gray-400 font-medium">No pending approval listing logs queued.</p>`;
+            } else {
+                pendingList.forEach(p => {
+                    pendingGrid.innerHTML += `
+                        <div class="bg-slate-50 border p-3 rounded-xl space-y-2 flex flex-col justify-between text-xs">
+                            <div class="flex gap-2">
+                                <img src="${p.images[0]}" class="w-12 h-12 rounded object-cover border bg-white">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-slate-800 truncate">${p.title}</h4>
+                                    <p class="text-blue-600 font-black">Rs ${p.price} (${p.plan.toUpperCase()})</p>
+                                    ${p.tid ? `<p class="text-amber-700 font-mono text-[10px] bg-amber-100/50 px-1 rounded inline-block mt-0.5">TID: ${p.tid}</p>` : ''}
+                                </div>
+                            </div>
+                            <p class="text-gray-500 line-clamp-2 text-[11px] bg-white p-1.5 rounded border border-gray-100">${p.desc}</p>
+                            <div class="text-[10px] text-gray-400 bg-gray-100 p-1 rounded font-medium">
+                                <span>Seller: ${p.sellerName} (${p.contact})</span><br>
+                                <span>Loc: ${p.city}</span>
+                            </div>
+                            <div class="flex gap-1.5 pt-1">
+                                <button onclick="adminAuthorizePost('${p.id}', 'approved')" class="flex-1 bg-emerald-600 text-white font-bold py-1.5 rounded text-[11px] shadow-sm"><i class="fas fa-check mr-0.5"></i> Approve</button>
+                                <button onclick="adminAuthorizePost('${p.id}', 'rejected')" class="flex-1 bg-rose-600 text-white font-bold py-1.5 rounded text-[11px] shadow-sm"><i class="fas fa-ban mr-0.5"></i> Reject</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const activeGrid = document.getElementById('adminActiveGrid');
+            activeGrid.innerHTML = '';
+            if(activeList.length === 0) {
+                activeGrid.innerHTML = `<p class="col-span-full text-center py-6 text-xs text-gray-400 font-medium">No public listings cataloged.</p>`;
+            } else {
+                activeList.forEach(p => {
+                    activeGrid.innerHTML += `
+                        <div class="bg-white border p-3 rounded-xl flex items-center justify-between gap-2 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <img src="${p.images[0]}" class="w-10 h-10 rounded object-cover border flex-shrink-0">
+                                <div class="truncate">
+                                    <h4 class="font-semibold text-slate-800 truncate">${p.title}</h4>
+                                    <p class="text-[10px] text-gray-400">${p.city} &bull; Rs ${p.price}</p>
+                                </div>
+                            </div>
+                            <button onclick="adminAuthorizePost('${p.id}', 'deleted')" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                });
+            }
+
+            const feedBox = document.getElementById('adminFeedbackList');
+            feedBox.innerHTML = '';
+            if(feedbackSystemData.length === 0) {
+                feedBox.innerHTML = `<p class="text-center text-gray-400 text-xs py-4">Feedback registry database box empty.</p>`;
+            } else {
+                feedbackSystemData.forEach(f => {
+                    feedBox.innerHTML += `
+                        <div class="bg-slate-50 border p-2.5 rounded-xl text-xs space-y-1 relative">
+                            <button onclick="adminDeleteFeedback('${f.id}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-[10px]"><i class="fas fa-trash-alt"></i></button>
+                            <div class="font-bold text-slate-800">${f.name} <span class="text-gray-400 font-normal text-[10px]">(${f.phone})</span></div>
+                            <p class="text-gray-600 text-[11px] leading-relaxed bg-white p-1.5 rounded border border-gray-100">${f.msg}</p>
+                            <div class="text-[9px] text-gray-400 text-right font-medium">${f.date}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            const usersBox = document.getElementById('adminUsersList');
+            usersBox.innerHTML = '';
+            if(registeredUsers.length === 0) {
+                usersBox.innerHTML = `<p class="text-center text-gray-400 text-xs py-2">No users log available.</p>`;
+            } else {
+                registeredUsers.forEach(u => {
+                    usersBox.innerHTML += `
+                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-gray-100">
+                            <img src="${u.avatar || tempProfileImageBase64}" class="w-8 h-8 rounded-full border bg-white object-cover">
+                            <div class="min-w-0 flex-1 text-xs">
+                                <h5 class="font-bold text-slate-800 truncate">${u.name}</h5>
+                                <p class="text-[10px] text-gray-400 truncate">${u.phone}</p>
+                            </div>
+                            <span class="text-[8px] text-gray-400 bg-gray-200 px-1 rounded font-medium">${u.timestamp ? u.timestamp.split(',')[0] : ''}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            if (typeof window.syncAdminChatUI === 'function') window.syncAdminChatUI();
+        }
+
+        function renderImportantPostsDisplay() {
+            const container = document.getElementById('importantAnnouncementsContainer');
+            const grid = document.getElementById('importantPostsGrid');
+            const mgmtList = document.getElementById('adminImportantPostsManagementList');
+
+            if(!container || !grid) return;
+            grid.innerHTML = '';
+            if(mgmtList) mgmtList.innerHTML = '';
+
+            if(importantPosts.length === 0) {
+                container.classList.add('hidden');
+                if(mgmtList) mgmtList.innerHTML = `<p class="text-xs text-center text-gray-400 py-2">No active announcements notice broadcasted.</p>`;
+                return;
+            }
+
+            container.classList.remove('hidden');
+            importantPosts.forEach(post => {
+                grid.innerHTML += `
+                    <div class="bg-white border border-amber-100 rounded-xl overflow-hidden p-2 flex gap-3 items-center shadow-sm">
+                        <img src="${post.image}" class="w-16 h-16 object-cover rounded-lg bg-gray-50 flex-shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-xs font-bold text-amber-950 truncate">${post.title}</h4>
+                            <p class="text-[11px] text-amber-800 line-clamp-2 leading-tight mt-0.5">${post.desc}</p>
+                        </div>
+                    </div>
+                `;
+
+                if(mgmtList) {
+                    mgmtList.innerHTML += `
+                        <div class="flex items-center justify-between gap-2 p-1.5 border bg-white rounded-lg text-xs">
+                            <span class="truncate font-medium text-slate-700 flex-1 pr-2">${post.title}</span>
+                            <button onclick="adminRemoveImportantNoticePost('${post.id}')" class="text-red-500 font-bold px-1 text-[10px] hover:underline"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function capitalize(str) {
+            return str.replace('-', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+        }
+    </script> 
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+        import { 
+            getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, setDoc 
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYbW4jJfUVc3wf17kXJYRvxpVUrM2yvBM",
+            authDomain: "nexmarket3-a5714.firebaseapp.com",
+            projectId: "nexmarket3-a5714",
+            storageBucket: "nexmarket3-a5714.firebasestorage.app",
+            messagingSenderId: "743979186472",
+            appId: "1:743979186472:web:e7710ec1c95508a728381d",
+            measurementId: "G-K0GYH9STLS"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // --- Realtime Subscriptions to Firestore Collections ---
+        
+        onSnapshot(query(collection(db, "products"), orderBy("timestamp", "desc")), (snapshot) => {
+            products = [];
+            snapshot.forEach(doc => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+            renderProducts();
+            if(isAdminActive) renderAdminDashboard();
+        });
+
+        onSnapshot(query(collection(db, "feedbacks"), orderBy("timestamp", "desc")), (snapshot) => {
+            feedbackSystemData = [];
+            snapshot.forEach(doc => {
+                feedbackSystemData.push({ id: doc.id, ...doc.data() });
+            });
+            if(isAdminActive) renderAdminDashboard();
+        });
+
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            registeredUsers = [];
+            snapshot.forEach(doc => {
+                registeredUsers.push(doc.data());
+            });
+            if(isAdminActive) renderAdminDashboard();
+        });
+
+        onSnapshot(collection(db, "support_chats"), (snapshot) => {
+            globalSupportChats = [];
+            snapshot.forEach(doc => {
+                globalSupportChats.push(doc.data());
+            });
+            window.syncUserChatUI();
+            window.syncAdminChatUI();
+        });
+
+        onSnapshot(query(collection(db, "announcements"), orderBy("timestamp", "desc")), (snapshot) => {
+            importantPosts = [];
+            snapshot.forEach(doc => {
+                importantPosts.push({ id: doc.id, ...doc.data() });
+            });
+            renderImportantPostsDisplay();
+        });
+
+        // --- Auth Identity Setup ---
+        function setupInitialProfileState() {
+            if (!currentUserProfile) {
+                currentUserProfile = {
+                    name: "Guest User",
+                    phone: "03000000000",
+                    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150"
+                };
+                localStorage.setItem('olx_user_profile_v3', JSON.stringify(currentUserProfile));
+            }
+            
+            document.getElementById('navProfileName').innerText = currentUserProfile.name;
+            
+            if (currentUserProfile.name === "imtiazalee786110" || currentUserProfile.phone === "imtiazalee786110") {
+                isAdminActive = true;
+                document.getElementById('adminPanelNavBtn').classList.remove('hidden');
+            } else {
+                isAdminActive = false;
+                document.getElementById('adminPanelNavBtn').classList.add('hidden');
+            }
+
+            logUserSessionIntoAdminDataset(currentUserProfile);
+        }
+
+        async function logUserSessionIntoAdminDataset(profileObj) {
+            if(!profileObj.phone) return;
+            await setDoc(doc(db, "users", profileObj.phone), {
+                name: profileObj.name,
+                phone: profileObj.phone,
+                avatar: profileObj.avatar,
+                timestamp: new Date().toLocaleString()
+            });
+        }
+
+        // --- Action Handlers ---
+
+        handleProfileSubmit = async function(e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('profileNameInput').value.trim();
+            const phoneVal = document.getElementById('profilePhoneInput').value.trim();
+
+            if (!nameVal || !phoneVal) return;
+
+            currentUserProfile.name = nameVal;
+            currentUserProfile.phone = phoneVal;
+            currentUserProfile.avatar = tempProfileImageBase64;
+
+            localStorage.setItem('olx_user_profile_v3', JSON.stringify(currentUserProfile));
+            document.getElementById('navProfileName').innerText = nameVal;
+
+            if (nameVal === "imtiazalee786110" || phoneVal === "imtiazalee786110") {
+                isAdminActive = true;
+                document.getElementById('adminPanelNavBtn').classList.remove('hidden');
+                alert("Profile Saved. Admin power granted!");
+            } else {
+                isAdminActive = false;
+                document.getElementById('adminPanelNavBtn').classList.add('hidden');
+                alert("Profile Updated Successfully.");
+            }
+
+            await logUserSessionIntoAdminDataset(currentUserProfile);
+            toggleModal('profileModal');
+            
+            // Automatic redirect to Home view upon login/profile save
+            navigateTo('home');
+        };
+
+        handleFormSubmit = async function(e) {
+            e.preventDefault();
+            if (uploadedImagesBase64.length === 0) {
+                alert("Please upload at least one main product photo image cover.");
+                return;
+            }
+
+            const cat = document.getElementById('formCategory').value;
+            const planType = document.querySelector('input[name="postPlanType"]:checked')?.value || 'free';
+            const priceNum = parseFloat(document.getElementById('formPrice').value);
+
+            let newAdObj = {
+                title: document.getElementById('formTitle').value.trim(),
+                price: priceNum.toLocaleString(),
+                city: document.getElementById('citySearchInput').value.trim(),
+                time: "Just now",
+                featured: (planType === 'paid'),
+                plan: planType,
+                images: [...uploadedImagesBase64],
+                category: cat,
+                desc: document.getElementById('formDesc').value.trim(),
+                sellerName: document.getElementById('formSellerName').value.trim(),
+                contact: document.getElementById('formContact').value.trim(),
+                status: "pending", 
+                tid: (planType === 'paid') ? document.getElementById('formTransactionId').value.trim() : "",
+                timestamp: Date.now()
+            };
+
+            if (cat === 'mobiles') {
+                newAdObj.brand = document.getElementById('formBrand').value.trim();
+                newAdObj.model = document.getElementById('formModel').value.trim();
+                newAdObj.pta = document.getElementById('formPta').value;
+                newAdObj.ram = document.getElementById('formRam').value.trim();
+                newAdObj.storage = document.getElementById('formStorage').value.trim();
+            } else if (cat === 'vehicles') {
+                newAdObj.brand = document.getElementById('formBrand').value.trim();
+                newAdObj.model = document.getElementById('formModel').value.trim();
+                newAdObj.year = document.getElementById('formYear').value.trim();
+                newAdObj.kmDriven = parseFloat(document.getElementById('formKm').value).toLocaleString();
+                newAdObj.fuelType = document.getElementById('formFuel').value;
+                newAdObj.regCity = document.getElementById('formRegCity').value.trim();
+            } else {
+                newAdObj.condition = document.getElementById('formCondition').value.trim();
+            }
+
+            await addDoc(collection(db, "products"), newAdObj);
+            alert("Your advertisement post has been submitted successfully to Cloud Firestore Database and queued for Admin approval panel!");
+
+            document.getElementById('addAdForm').reset();
+            uploadedImagesBase64 = [];
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+            document.getElementById('dynamicFieldsContainer').innerHTML = `<p class="text-sm text-gray-400 py-4 text-center">Please select a category above to load the accurate form parameters.</p>`;
+            document.getElementById('sharedFormBottom').classList.add('hidden');
+            
+            toggleModal('sellModal');
+            
+            // Automatic redirect to Home view upon product submission
+            navigateTo('home');
+        };
+
+        handleFeedbackSubmit = async function(e) {
+            e.preventDefault();
+            const text = document.getElementById('feedbackMsgTextarea').value.trim();
+            if(!text) return;
+
+            await addDoc(collection(db, "feedbacks"), {
+                name: currentUserProfile ? currentUserProfile.name : "Guest",
+                phone: currentUserProfile ? currentUserProfile.phone : "Unknown",
+                msg: text,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now()
+            });
+
+            alert("Feedback saved persistently into Cloud FireStore. Thank you!");
+            document.getElementById('userFeedbackForm').reset();
+            toggleModal('feedbackModal');
+        };
+
+        window.syncUserChatUI = function() {
+            const area = document.getElementById('userChatMessagesArea');
+            if(!area) return;
+            area.innerHTML = '';
+            
+            const userPhone = currentUserProfile ? currentUserProfile.phone : "03000000000";
+            let thread = globalSupportChats.find(t => t.userPhone === userPhone);
+
+            if(!thread || !thread.messages || thread.messages.length === 0) {
+                area.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs"><i class="fas fa-headset text-xl block mb-1"></i> No prior conversational support logs. Type below to query admin desk.</div>`;
+                return;
+            }
+
+            thread.messages.forEach(m => {
+                const isAdmin = m.sender === 'admin';
+                area.innerHTML += `
+                    <div class="flex flex-col ${isAdmin ? 'items-start' : 'items-end'}">
+                        <div class="${isAdmin ? 'bg-slate-200 text-slate-800' : 'bg-blue-600 text-white'} text-xs max-w-[85%] rounded-2xl px-3 py-2 shadow-sm font-medium">
+                            ${m.text}
+                        </div>
+                        <span class="text-[9px] text-gray-400 px-1 mt-0.5">${m.time}</span>
+                    </div>
+                `;
+            });
+            area.scrollTop = area.scrollHeight;
+        };
+
+        handleUserChatSend = async function(e) {
+            e.preventDefault();
+            const txtInput = document.getElementById('userChatTextInput');
+            const text = txtInput.value.trim();
+            if(!text) return;
+
+            const userPhone = currentUserProfile ? currentUserProfile.phone : "03000000000";
+            const userName = currentUserProfile ? currentUserProfile.name : "Guest User";
+
+            let thread = globalSupportChats.find(t => t.userPhone === userPhone);
+            let currentMessages = thread && thread.messages ? [...thread.messages] : [];
+
+            currentMessages.push({
+                sender: 'user',
+                text: text,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+
+            await setDoc(doc(db, "support_chats", userPhone), {
+                userPhone: userPhone,
+                userName: userName,
+                messages: currentMessages
+            });
+
+            txtInput.value = '';
+        };
+
+        window.syncAdminChatUI = function() {
+            const box = document.getElementById('adminChatThreadsContainer');
+            if(!box) return;
+            box.innerHTML = '';
+
+            if(globalSupportChats.length === 0) {
+                box.innerHTML = `<p class="text-center text-gray-400 text-xs py-4">No operational support threads active.</p>`;
+            } else {
+                globalSupportChats.forEach(thread => {
+                    const lastMsg = thread.messages && thread.messages.length ? thread.messages[thread.messages.length - 1] : null;
+                    const isSelected = (adminSelectedUserChatId === thread.userPhone);
+                    box.innerHTML += `
+                        <div onclick="window.openAdminChatWindowFromModule('${thread.userPhone}')" class="p-2.5 rounded-xl border transition cursor-pointer text-xs ${isSelected ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 hover:bg-slate-100 border-gray-100'} flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-800 truncate">${thread.userName} <span class="text-[10px] text-gray-400 font-normal">(${thread.userPhone})</span></div>
+                                <p class="text-[11px] text-gray-500 truncate mt-0.5">${lastMsg ? lastMsg.text : 'No message log.'}</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-300 text-[10px]"></i>
+                        </div>
+                    `;
+                });
+            }
+
+            const area = document.getElementById('adminChatMessagesArea');
+            if(area && adminSelectedUserChatId) {
+                area.innerHTML = '';
+                const thread = globalSupportChats.find(t => t.userPhone === adminSelectedUserChatId);
+                if(thread && thread.messages) {
+                    thread.messages.forEach(m => {
+                        const isAdmin = m.sender === 'admin';
+                        area.innerHTML += `
+                            <div class="flex flex-col ${isAdmin ? 'items-end' : 'items-start'}">
+                                <div class="${isAdmin ? 'bg-indigo-600 text-white' : 'bg-white border text-slate-800'} text-xs max-w-[85%] rounded-2xl px-3 py-2 shadow-sm font-medium">
+                                    ${m.text}
+                                </div>
+                                <span class="text-[9px] text-gray-400 px-1 mt-0.5">${m.time}</span>
+                            </div>
+                        `;
+                    });
+                    area.scrollTop = area.scrollHeight;
+                }
+            }
+        };
+
+        window.openAdminChatWindowFromModule = function(userPhone) {
+            adminSelectedUserChatId = userPhone;
+            const thread = globalSupportChats.find(t => t.userPhone === userPhone);
+            if(!thread) return;
+
+            document.getElementById('adminActiveChatUserTitle').innerText = `${thread.userName} (${thread.userPhone})`;
+            document.getElementById('adminChatWindowBox').classList.remove('hidden');
+            window.syncAdminChatUI();
+        };
+
+        handleAdminChatSend = async function(e) {
+            e.preventDefault();
+            const txtInput = document.getElementById('adminChatTextInput');
+            const text = txtInput.value.trim();
+            if(!text || !adminSelectedUserChatId) return;
+
+            const thread = globalSupportChats.find(t => t.userPhone === adminSelectedUserChatId);
+            if(!thread) return;
+
+            let currentMessages = thread.messages ? [...thread.messages] : [];
+            currentMessages.push({
+                sender: 'admin',
+                text: text,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+
+            await setDoc(doc(db, "support_chats", adminSelectedUserChatId), {
+                userPhone: thread.userPhone,
+                userName: thread.userName,
+                messages: currentMessages
+            });
+
+            txtInput.value = '';
+        };
+
+        adminAuthorizePost = async function(id, command) {
+            if (command === 'approved') {
+                await updateDoc(doc(db, "products", id), { status: "approved" });
+                alert("Listing validated and synchronized to public grid streams.");
+            } else if (command === 'rejected' || command === 'deleted') {
+                await deleteDoc(doc(db, "products", id));
+                alert("Listing entry purged from Cloud Database registry successfully.");
+            }
+        };
+
+        adminDeleteFeedback = async function(id) {
+            await deleteDoc(doc(db, "feedbacks", id));
+            alert("Feedback parameter clean removed.");
+        };
+
+        handleImportantPostSubmit = async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('importantPostImage');
+            const titleVal = document.getElementById('importantPostTitle').value.trim();
+            const descVal = document.getElementById('importantPostDesc').value.trim();
+
+            if(!fileInput.files[0] || !titleVal || !descVal) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Img = event.target.result;
+                await addDoc(collection(db, "announcements"), {
+                    title: titleVal,
+                    desc: descVal,
+                    image: base64Img,
+                    timestamp: Date.now()
+                });
+                alert("Important announcement broadcasted via Firebase cloud networks!");
+                document.getElementById('adminImportantPostForm').reset();
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        };
+
+        adminRemoveImportantNoticePost = async function(id) {
+            await deleteDoc(doc(db, "announcements", id));
+            alert("Announcement notice removed from system node channels.");
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupInitialProfileState();
+        });
+    </script>
+</body>
+</html>
